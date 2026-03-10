@@ -1,0 +1,106 @@
+import type { NarrativeFramework } from '@/types'
+
+export const frameworks: NarrativeFramework[] = [
+  {
+    id: 'heros-journey',
+    name: 'Jornada do Herói',
+    author: 'Joseph Campbell / Christopher Vogler',
+    stageCount: 12,
+    description: 'O monomito universal: o herói parte do mundo comum, enfrenta provações no mundo especial e retorna transformado.',
+    stages: [
+      { index: 0, name: 'Mundo Comum', guidingQuestion: 'Como é a vida do herói antes de tudo mudar? O que é "normal" para ele — e o que já incomoda, mesmo que ele não saiba?' },
+      { index: 1, name: 'Chamado à Aventura', guidingQuestion: 'O que arranca o herói do mundo comum? Que evento torna impossível continuar como antes?' },
+      { index: 2, name: 'Recusa do Chamado', guidingQuestion: 'Por que o herói hesita? O que ele tem a perder? Que medo ou obrigação o prende?' },
+      { index: 3, name: 'Encontro com o Mentor', guidingQuestion: 'Quem ou o quê dá ao herói a coragem ou ferramenta para seguir? O mentor pode ser uma pessoa, um objeto, uma memória.' },
+      { index: 4, name: 'Travessia do Primeiro Limiar', guidingQuestion: 'Qual é o ponto sem retorno? O momento em que o herói deixa o mundo conhecido e não pode mais voltar atrás?' },
+      { index: 5, name: 'Provas, Aliados e Inimigos', guidingQuestion: 'Quem o herói encontra no mundo especial? Quem se torna aliado, quem se revela inimigo? Que regras desse novo mundo ele precisa aprender?' },
+      { index: 6, name: 'Aproximação da Caverna Oculta', guidingQuestion: 'O herói se prepara para o maior desafio. O que está em jogo? O que ele descobre sobre si mesmo enquanto se aproxima?' },
+      { index: 7, name: 'Provação Suprema', guidingQuestion: 'Este é o momento de morte simbólica. O que o herói enfrenta que pode destruí-lo? O que ele precisa sacrificar?' },
+      { index: 8, name: 'Recompensa (Apanhando a Espada)', guidingQuestion: 'O que o herói ganha após sobreviver à provação? Pode ser um objeto, conhecimento, poder ou transformação interna.' },
+      { index: 9, name: 'Caminho de Volta', guidingQuestion: 'O herói começa a retornar, mas a jornada não acabou. Que consequências da provação o perseguem?' },
+      { index: 10, name: 'Ressurreição', guidingQuestion: 'O teste final. O herói usa tudo que aprendeu. Como a pessoa que ele se tornou difere da pessoa que partiu?' },
+      { index: 11, name: 'Retorno com o Elixir', guidingQuestion: 'O que o herói traz de volta para o mundo comum? Como isso transforma não só ele, mas o mundo ao seu redor?' },
+    ],
+  },
+  {
+    id: 'save-the-cat',
+    name: 'Save the Cat!',
+    author: 'Blake Snyder',
+    stageCount: 15,
+    description: '15 beats narrativos que mapeiam a estrutura emocional da história, da imagem de abertura à imagem final.',
+    stages: [
+      { index: 0, name: 'Imagem de Abertura', guidingQuestion: 'Qual é o "retrato" do mundo antes da história? Este momento deve espelhar a Imagem Final.' },
+      { index: 1, name: 'Declaração do Tema', guidingQuestion: 'Alguém (não o protagonista) diz algo que resume o tema da história, geralmente nos primeiros 5 minutos. O protagonista ainda não entende.' },
+      { index: 2, name: 'Setup (Apresentação)', guidingQuestion: 'Mostre o mundo como ele é. Plante tudo que será colhido depois. Cada elemento aqui é uma promessa ao leitor.' },
+      { index: 3, name: 'Catalisador', guidingQuestion: 'O evento que muda tudo. Sem ele, a história não existiria. O que acontece que torna o status quo insustentável?' },
+      { index: 4, name: 'Debate', guidingQuestion: 'O protagonista hesita. Deveria aceitar? O que está em risco? Este é o momento de dúvida humana.' },
+      { index: 5, name: 'Virada para o Ato II', guidingQuestion: 'O protagonista escolhe agir. Este é um ponto sem retorno — deve ser uma decisão ativa, não passiva.' },
+      { index: 6, name: 'Trama B', guidingQuestion: 'A história secundária começa — geralmente uma relação (romântica, amizade, mentoria) que carrega o tema.' },
+      { index: 7, name: 'Diversão e Jogos', guidingQuestion: 'A "promessa da premissa" se cumpre aqui. É o que apareceria no trailer. O que faz essa história ser divertida/interessante de acompanhar?' },
+      { index: 8, name: 'Ponto Médio', guidingQuestion: 'Falsa vitória ou falsa derrota. As apostas sobem. O protagonista descobre algo que muda o jogo.' },
+      { index: 9, name: 'Os Vilões se Aproximam', guidingQuestion: 'Pressão externa e interna aumentam. Aliados traem, planos falham, a equipe se desintegra.' },
+      { index: 10, name: 'Tudo Está Perdido', guidingQuestion: 'O momento mais baixo. Blake Snyder diz que aqui deve haver um "whiff of death" — algo precisa morrer, literal ou simbolicamente. O que morre? Uma relação? Uma crença? Uma esperança?' },
+      { index: 11, name: 'Noite Escura da Alma', guidingQuestion: 'O protagonista sozinho com seu fracasso. Este é o momento de reflexão mais profunda antes da virada final.' },
+      { index: 12, name: 'Virada para o Ato III', guidingQuestion: 'A solução vem da Trama B. O que o protagonista aprendeu na relação secundária que agora ilumina a solução?' },
+      { index: 13, name: 'Finale', guidingQuestion: 'O protagonista aplica tudo que aprendeu. O mundo antigo é destruído e o novo é construído.' },
+      { index: 14, name: 'Imagem Final', guidingQuestion: 'O espelho da Imagem de Abertura. O que mudou? Se a abertura era triste, o final é esperançoso (ou vice-versa na tragédia).' },
+    ],
+  },
+  {
+    id: 'freytag',
+    name: 'Pirâmide de Freytag',
+    author: 'Gustav Freytag',
+    stageCount: 5,
+    description: 'Estrutura dramática clássica em 5 partes: a tensão sobe até o clímax e desce até a resolução.',
+    stages: [
+      { index: 0, name: 'Exposição', guidingQuestion: 'Quem são os personagens? Onde estamos? O que é o status quo?' },
+      { index: 1, name: 'Ação Ascendente', guidingQuestion: 'Que eventos criam tensão crescente? Cada obstáculo é maior que o anterior?' },
+      { index: 2, name: 'Clímax', guidingQuestion: 'O ponto de maior tensão. Qual decisão irreversível o protagonista toma?' },
+      { index: 3, name: 'Ação Descendente', guidingQuestion: 'Quais são as consequências do clímax? O mundo reage.' },
+      { index: 4, name: 'Desfecho (Dénouement)', guidingQuestion: 'Como o novo equilíbrio se estabelece? O que mudou permanentemente?' },
+    ],
+  },
+  {
+    id: 'kishotenketsu',
+    name: 'Kishōtenketsu',
+    author: 'Tradição Oriental',
+    stageCount: 4,
+    description: 'Estrutura em 4 atos sem conflito obrigatório. A reviravolta no terceiro ato muda a perspectiva sobre tudo.',
+    stages: [
+      { index: 0, name: 'Ki (起) — Introdução', guidingQuestion: 'Apresente os elementos sem conflito. O leitor conhece o mundo e os personagens em estado neutro.' },
+      { index: 1, name: 'Shō (承) — Desenvolvimento', guidingQuestion: 'Aprofunde o que foi apresentado. Construa familiaridade. Ainda não há conflito.' },
+      { index: 2, name: 'Ten (転) — Reviravolta', guidingQuestion: 'Introduza algo inesperado que muda a perspectiva sobre tudo que veio antes. Pode ser uma revelação, uma justaposição, ou um novo elemento.' },
+      { index: 3, name: 'Ketsu (結) — Conclusão', guidingQuestion: 'Reconcilie o mundo da introdução com a revelação da reviravolta. O leitor vê tudo sob uma nova luz.' },
+    ],
+  },
+  {
+    id: 'three-acts',
+    name: 'Três Atos',
+    author: 'Estrutura Clássica',
+    stageCount: 3,
+    description: 'A estrutura mais fundamental: setup, confrontação e resolução.',
+    stages: [
+      { index: 0, name: 'Ato I — Setup', guidingQuestion: 'Apresente o mundo, o protagonista e o conflito central. Termine com o ponto sem retorno.' },
+      { index: 1, name: 'Ato II — Confrontação', guidingQuestion: 'Obstáculos crescentes, subplots se entrelaçam, aliados e inimigos se revelam. Termine com o "tudo está perdido".' },
+      { index: 2, name: 'Ato III — Resolução', guidingQuestion: 'O clímax e suas consequências. O novo mundo se estabelece.' },
+    ],
+  },
+  {
+    id: 'five-acts',
+    name: 'Cinco Atos',
+    author: 'Shakespeare / Drama Elisabetano',
+    stageCount: 5,
+    description: 'Estrutura shakespeariana em 5 atos, ideal para tragédias e dramas complexos.',
+    stages: [
+      { index: 0, name: 'Exposição', guidingQuestion: 'Apresente o mundo e os personagens com um evento incitante.' },
+      { index: 1, name: 'Ação Ascendente', guidingQuestion: 'Complicações crescem, o protagonista se compromete com um caminho.' },
+      { index: 2, name: 'Clímax (Ato III)', guidingQuestion: 'O ponto de virada central. Decisão irreversível.' },
+      { index: 3, name: 'Ação Descendente', guidingQuestion: 'As consequências se acumulam. O destino se torna inevitável.' },
+      { index: 4, name: 'Catástrofe / Resolução', guidingQuestion: 'Na tragédia, a queda final. Na comédia, a reconciliação.' },
+    ],
+  },
+]
+
+export function getFramework(id: string): NarrativeFramework | undefined {
+  return frameworks.find(f => f.id === id)
+}
