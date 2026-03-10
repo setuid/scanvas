@@ -10,6 +10,7 @@ import {
   deleteStoryDataFromLocal,
   saveStoryDataToLocal,
 } from '@/lib/localStorage'
+import { saveStoryToSupabase, deleteStoryFromSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import { importStoryFromJson, downloadStoryJson } from '@/lib/jsonExport'
 import { createEmptyStory } from '@/types'
 import { genres as genreList } from '@/data/genres'
@@ -34,7 +35,7 @@ export default function Home() {
     }
   }, [])
 
-  const handleNewWithWizard = () => {
+  const createNewStory = (navigateTo: 'wizard' | 'canvas') => {
     const userId = user?.id || 'local'
     const story = createEmptyStory(userId)
     const data = {
@@ -55,43 +56,29 @@ export default function Home() {
     addStoryToList(story)
     saveStoryDataToLocal(story.id, data)
     saveStoriesToLocal([...stories, story])
-    navigate(`/wizard/${story.id}`)
+    if (user) saveStoryToSupabase(data)
+    navigate(navigateTo === 'wizard' ? `/wizard/${story.id}` : `/canvas/${story.id}`)
   }
 
-  const handleNewDirect = () => {
-    const userId = user?.id || 'local'
-    const story = createEmptyStory(userId)
-    const data = {
-      story,
-      acts: [],
-      characters: [],
-      relations: [],
-      scenes: [],
-      sceneConnections: [],
-      subplots: [],
-      promises: [],
-      informationReveals: [],
-      worldNotes: [],
-      boardNotes: [],
-      characterArcPoints: [],
+  const handleNewWithWizard = () => createNewStory('wizard')
+  const handleNewDirect = () => createNewStory('canvas')
+
+  const handleOpen = async (storyId: string) => {
+    let data = loadStoryDataFromLocal(storyId)
+    if (!data && user) {
+      data = await loadStoryFromSupabase(storyId)
     }
-    loadStory(data)
-    addStoryToList(story)
-    saveStoryDataToLocal(story.id, data)
-    saveStoriesToLocal([...stories, story])
-    navigate(`/canvas/${story.id}`)
-  }
-
-  const handleOpen = (storyId: string) => {
-    const data = loadStoryDataFromLocal(storyId)
     if (data) {
       loadStory(data)
       navigate(`/canvas/${storyId}`)
     }
   }
 
-  const handleDuplicate = (storyId: string) => {
-    const data = loadStoryDataFromLocal(storyId)
+  const handleDuplicate = async (storyId: string) => {
+    let data = loadStoryDataFromLocal(storyId)
+    if (!data && user) {
+      data = await loadStoryFromSupabase(storyId)
+    }
     if (!data) return
     const newId = crypto.randomUUID()
     const newStory = { ...data.story, id: newId, title: `${data.story.title} (cópia)`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
@@ -100,6 +87,7 @@ export default function Home() {
     const updated = [...stories, newStory]
     addStoryToList(newStory)
     saveStoriesToLocal(updated)
+    if (user) saveStoryToSupabase(newData)
   }
 
   const handleDelete = (storyId: string) => {
@@ -107,6 +95,7 @@ export default function Home() {
     deleteStoryDataFromLocal(storyId)
     removeStoryFromList(storyId)
     saveStoriesToLocal(stories.filter(s => s.id !== storyId))
+    if (user) deleteStoryFromSupabase(storyId)
   }
 
   const handleExport = (storyId: string) => {

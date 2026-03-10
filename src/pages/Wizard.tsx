@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStoryStore } from '@/store/useStoryStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import { saveStoryDataToLocal, saveStoriesToLocal, loadStoryDataFromLocal } from '@/lib/localStorage'
+import { saveStoryToSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import { frameworks, getFramework } from '@/data/frameworks'
 import { genres } from '@/data/genres'
 import { archetypes } from '@/data/archetypes'
@@ -37,19 +39,32 @@ export default function Wizard() {
   useEffect(() => {
     if (!current && storyId) {
       const data = loadStoryDataFromLocal(storyId)
-      if (data) loadStory(data)
+      if (data) {
+        loadStory(data)
+      } else if (useAuthStore.getState().user) {
+        // Try loading from Supabase if local not found
+        loadStoryFromSupabase(storyId).then(remoteData => {
+          if (remoteData) loadStory(remoteData)
+        })
+      }
     }
   }, [storyId])
 
-  // Auto-save on changes
+  // Auto-save on changes (localStorage + Supabase)
   useEffect(() => {
     if (!current) return
     const t = setTimeout(() => {
+      // Always save locally
       saveStoryDataToLocal(current.story.id, current)
       const stories = useStoryStore.getState().stories.map(s =>
         s.id === current.story.id ? current.story : s
       )
       saveStoriesToLocal(stories)
+
+      // Also save to Supabase if authenticated
+      if (useAuthStore.getState().user) {
+        saveStoryToSupabase(current)
+      }
     }, 500)
     return () => clearTimeout(t)
   }, [current])

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useStoryStore } from '@/store/useStoryStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import { saveStoryDataToLocal, saveStoriesToLocal, loadStoryDataFromLocal } from '@/lib/localStorage'
+import { saveStoryToSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import DashboardTab from '@/components/canvas/DashboardTab'
 import StructureTab from '@/components/canvas/StructureTab'
 import CharactersTab from '@/components/canvas/CharactersTab'
@@ -26,22 +28,37 @@ export default function Canvas() {
       const data = loadStoryDataFromLocal(storyId)
       if (data) {
         loadStory(data)
+      } else if (useAuthStore.getState().user) {
+        // Try loading from Supabase if local not found
+        loadStoryFromSupabase(storyId).then(remoteData => {
+          if (remoteData) {
+            loadStory(remoteData)
+          } else {
+            navigate('/')
+          }
+        })
       } else {
         navigate('/')
       }
     }
   }, [storyId])
 
-  // Auto-save with debounce
+  // Auto-save with debounce (localStorage + Supabase)
   useEffect(() => {
     if (!current) return
     const t = setTimeout(() => {
+      // Always save locally
       saveStoryDataToLocal(current.story.id, current)
       const stories = useStoryStore.getState().stories.map(s =>
         s.id === current.story.id ? current.story : s
       )
       saveStoriesToLocal(stories)
       useStoryStore.getState().markClean()
+
+      // Also save to Supabase if authenticated
+      if (useAuthStore.getState().user) {
+        saveStoryToSupabase(current)
+      }
     }, 1000)
     return () => clearTimeout(t)
   }, [current])
