@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useStoryStore } from '@/store/useStoryStore'
 import { supabase } from '@/lib/supabase'
+import AuthModal from '@/components/AuthModal'
 import type { ReactNode } from 'react'
 
 interface LayoutProps {
@@ -13,6 +15,7 @@ export default function Layout({ children }: LayoutProps) {
   const user = useAuthStore(s => s.user)
   const current = useStoryStore(s => s.current)
   const isDirty = useStoryStore(s => s.isDirty)
+  const [authOpen, setAuthOpen] = useState(false)
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut()
@@ -56,7 +59,12 @@ export default function Layout({ children }: LayoutProps) {
                 </button>
               </>
             ) : (
-              <span className="text-text-muted text-sm">Modo local</span>
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="text-text-muted hover:text-gold text-sm transition-colors cursor-pointer"
+              >
+                Entrar / Criar Conta
+              </button>
             )}
           </div>
         </div>
@@ -66,6 +74,8 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   )
 }
