@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Lora", serif;
+  --font-sans: "Inter", sans-serif;
+
+  --color-bg: #111118;
+  --color-bg-secondary: #1a1a28;
+  --color-bg-tertiary: #222233;
+  --color-bg-hover: #2a2a3d;
+  --color-surface: #1e1e2e;
+  --color-surface-hover: #2a2a3e;
+  --color-border: #333346;
+  --color-border-light: #44445a;
+
+  --color-gold: #d4a843;
+  --color-gold-light: #e8c46a;
+  --color-gold-dim: #a07c30;
+
+  --color-text: #e8e8f0;
+  --color-text-secondary: #9999b0;
+  --color-text-muted: #666680;
+
+  --color-positive: #4ade80;
+  --color-negative: #f87171;
+  --color-warning: #fbbf24;
+  --color-info: #60a5fa;
+
+  --color-tragedy: #8b5cf6;
+  --color-comedy: #fbbf24;
+  --color-epic: #ef4444;
+  --color-drama: #ec4899;
+  --color-mystery: #3b82f6;
+  --color-absurd: #f97316;
+  --color-fable: #10b981;
+  --color-horror: #6366f1;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-light);
+}
+
+/* Shared input styles */
+.input-field {
+  width: 100%;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: var(--font-sans);
+  font-size: inherit;
+}
+
+.input-field:focus {
+  border-color: var(--color-gold);
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666680' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
