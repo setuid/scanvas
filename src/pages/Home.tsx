@@ -20,6 +20,7 @@ import AuthModal from '@/components/AuthModal'
 export default function Home() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
+  const syncing = useAuthStore(s => s.syncing)
   const stories = useStoryStore(s => s.stories)
   const setStories = useStoryStore(s => s.setStories)
   const loadStory = useStoryStore(s => s.loadStory)
@@ -193,10 +194,19 @@ export default function Home() {
           <div className="flex-1">
             <p className="text-text text-sm font-medium">{user.email}</p>
             <p className="text-text-muted text-xs">
-              {activeStories.length} {activeStories.length === 1 ? 'história' : 'histórias'} em andamento
-              — dados sincronizados na nuvem
+              {syncing ? (
+                'Sincronizando dados com a nuvem...'
+              ) : (
+                <>
+                  {activeStories.length} {activeStories.length === 1 ? 'história' : 'histórias'} em andamento
+                  — dados sincronizados na nuvem
+                </>
+              )}
             </p>
           </div>
+          {syncing && (
+            <span className="text-gold text-sm animate-pulse">Sincronizando...</span>
+          )}
         </div>
       )}
 

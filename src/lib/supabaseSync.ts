@@ -61,7 +61,7 @@ export async function loadStoryFromSupabase(storyId: string): Promise<StoryData 
   ] = await Promise.all([
     supabase.from('stories').select('*').eq('id', storyId).single(),
     supabase.from('story_acts').select('*').eq('story_id', storyId).order('act_index'),
-    supabase.from('characters').select('*').eq('story_id', storyId),
+    supabase.from('characters').select('*').eq('story_id', storyId).order('sort_order'),
     supabase.from('character_relations').select('*').eq('story_id', storyId),
     supabase.from('scenes').select('*').eq('story_id', storyId).order('sort_order'),
     supabase.from('scene_connections').select('*').eq('story_id', storyId),
@@ -95,6 +95,7 @@ export async function loadStoryFromSupabase(storyId: string): Promise<StoryData 
 }
 
 // --- Save full story (upsert) ---
+// FK-aware ordering: delete children first, then parents; insert parents first, then children.
 
 export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
   if (!supabase) return false
@@ -102,26 +103,55 @@ export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
   const storyId = data.story.id
 
   try {
-    // 1. Upsert story
+    // Phase 1: Delete child tables that have FK references to other child tables
+    // character_arc_points → characters, scenes
+    // scene_connections → scenes
+    // character_relations → characters
+    // promises → scenes (nullable FK, but still)
+    // information_reveals → scenes (nullable FK)
+    await Promise.all([
+      deleteRows('character_arc_points', storyId),
+      deleteRows('scene_connections', storyId),
+      deleteRows('character_relations', storyId),
+    ])
+
+    // Phase 2: Delete the remaining child tables (no cross-child FK deps)
+    await Promise.all([
+      deleteRows('story_acts', storyId),
+      deleteRows('characters', storyId),
+      deleteRows('scenes', storyId),
+      deleteRows('subplots', storyId),
+      deleteRows('promises', storyId),
+      deleteRows('information_reveals', storyId),
+      deleteRows('world_notes', storyId),
+      deleteRows('board_notes', storyId),
+    ])
+
+    // Phase 3: Upsert the story itself
     const { error: storyErr } = await supabase
       .from('stories')
       .upsert(data.story, { onConflict: 'id' })
     if (storyErr) throw storyErr
 
-    // 2. Sync child tables using delete + insert pattern
-    // This is simpler and more reliable than trying to diff individual rows
+    // Phase 4: Insert parent child tables (characters, scenes, subplots, acts, etc.)
+    // Add sort_order to characters based on array position
+    const charactersWithOrder = data.characters.map((c, i) => ({ ...c, sort_order: i }))
     await Promise.all([
-      syncTable('story_acts', storyId, data.acts),
-      syncTable('characters', storyId, data.characters),
-      syncTable('character_relations', storyId, data.relations),
-      syncTable('scenes', storyId, data.scenes),
-      syncTable('scene_connections', storyId, data.sceneConnections),
-      syncTable('subplots', storyId, data.subplots),
-      syncTable('promises', storyId, data.promises),
-      syncTable('information_reveals', storyId, data.informationReveals),
-      syncTable('world_notes', storyId, data.worldNotes),
-      syncTable('board_notes', storyId, data.boardNotes),
-      syncTable('character_arc_points', storyId, data.characterArcPoints),
+      insertRows('story_acts', data.acts),
+      insertRows('characters', charactersWithOrder),
+      insertRows('scenes', data.scenes),
+      insertRows('subplots', data.subplots),
+      insertRows('promises', data.promises),
+      insertRows('information_reveals', data.informationReveals),
+      insertRows('world_notes', data.worldNotes),
+      insertRows('board_notes', data.boardNotes),
+    ])
+
+    // Phase 5: Insert child-of-child tables (FK deps on characters/scenes)
+    await Promise.all([
+      insertRows('character_relations', data.relations),
+      insertRows('scene_connections', data.sceneConnections),
+      insertRows('character_arc_points', data.characterArcPoints),
     ])
 
     return true
@@ -131,23 +161,21 @@ export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
   }
 }
 
-async function syncTable(table: string, storyId: string, rows: any[]) {
+async function deleteRows(table: string, storyId: string) {
   if (!supabase) return
-
-  // Delete existing rows for this story
-  const { error: delErr } = await supabase
+  const { error } = await supabase
     .from(table)
     .delete()
     .eq('story_id', storyId)
-  if (delErr) throw delErr
+  if (error) throw error
+}
 
-  // Insert new rows (if any)
-  if (rows.length > 0) {
-    const { error: insErr } = await supabase
-      .from(table)
-      .insert(rows)
-    if (insErr) throw insErr
-  }
+async function insertRows(table: string, rows: any[]) {
+  if (!supabase || rows.length === 0) return
+  const { error } = await supabase
+    .from(table)
+    .insert(rows)
+  if (error) throw error
 }
 
 // --- Delete story ---
@@ -166,6 +194,28 @@ export async function deleteStoryFromSupabase(storyId: string): Promise<boolean>
     return false
   }
   return true
+}
+
+// --- Migrate local stories to Supabase on first login ---
+
+export async function migrateLocalStoriesToSupabase(
+  localStories: StoryData[],
+  userId: string
+): Promise<number> {
+  if (!supabase) return 0
+  let migrated = 0
+
+  for (const data of localStories) {
+    // Update user_id to the authenticated user
+    const migratedData: StoryData = {
+      ...data,
+      story: { ...data.story, user_id: userId },
+    }
+    const success = await saveStoryToSupabase(migratedData)
+    if (success) migrated++
+  }
+
+  return migrated
 }
 
 // --- Check if supabase is ready (configured + authenticated) ---
