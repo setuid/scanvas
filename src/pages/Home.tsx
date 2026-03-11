@@ -221,6 +221,11 @@ export default function Home() {
         <Button variant="ghost" size="lg" onClick={handleImport}>
           Importar JSON
         </Button>
+        {!user && (
+          <Button variant="ghost" size="lg" onClick={() => setAuthOpen(true)}>
+            Entrar / Criar Conta
+          </Button>
+        )}
       </div>
 
       <input
