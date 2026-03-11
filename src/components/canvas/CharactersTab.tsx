@@ -10,6 +10,7 @@ export default function CharactersTab() {
   const addCharacter = useStoryStore(s => s.addCharacter)
   const updateCharacter = useStoryStore(s => s.updateCharacter)
   const removeCharacter = useStoryStore(s => s.removeCharacter)
+  const moveCharacter = useStoryStore(s => s.moveCharacter)
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const handleAdd = () => {
@@ -50,7 +51,7 @@ export default function CharactersTab() {
       </div>
 
       <div className="space-y-3">
-        {current.characters.map(ch => {
+        {current.characters.map((ch, idx) => {
           const isExpanded = expanded === ch.id
           const sceneCount = scenesForCharacter(ch.id).length
 
@@ -77,6 +78,24 @@ export default function CharactersTab() {
                       ) : null
                     })}
                   </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => moveCharacter(ch.id, 'up')}
+                    disabled={idx === 0}
+                    className="p-1 text-text-muted hover:text-gold disabled:opacity-30 disabled:cursor-default transition-colors cursor-pointer"
+                    title="Mover para cima"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveCharacter(ch.id, 'down')}
+                    disabled={idx === current.characters.length - 1}
+                    className="p-1 text-text-muted hover:text-gold disabled:opacity-30 disabled:cursor-default transition-colors cursor-pointer"
+                    title="Mover para baixo"
+                  >
+                    ▼
+                  </button>
                 </div>
                 <span className="text-xs text-text-muted shrink-0">{sceneCount} cenas</span>
                 <span className="text-text-muted">{isExpanded ? '▾' : '▸'}</span>

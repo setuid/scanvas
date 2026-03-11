@@ -59,6 +59,7 @@ create table if not exists characters (
   arc text not null default '',
   backstory text not null default '',
   notes text not null default '',
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

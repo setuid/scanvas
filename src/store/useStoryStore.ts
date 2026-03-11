@@ -69,6 +69,7 @@ interface StoryStore {
   addCharacter: (char: Character) => void
   updateCharacter: (id: string, fields: Partial<Character>) => void
   removeCharacter: (id: string) => void
+  moveCharacter: (id: string, direction: 'up' | 'down') => void
 
   // Scenes
   addScene: (scene: Scene) => void
@@ -173,6 +174,16 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
       },
       isDirty: true,
     }
+  }),
+  moveCharacter: (id, direction) => set(s => {
+    if (!s.current) return s
+    const chars = [...s.current.characters]
+    const idx = chars.findIndex(c => c.id === id)
+    if (idx < 0) return s
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= chars.length) return s
+    ;[chars[idx], chars[targetIdx]] = [chars[targetIdx], chars[idx]]
+    return { current: { ...s.current, characters: chars }, isDirty: true }
   }),
 
   addScene: (scene) => set(s => {

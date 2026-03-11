@@ -46,7 +46,10 @@ export default function Canvas() {
   // Auto-save with debounce (localStorage + Supabase)
   useEffect(() => {
     if (!current) return
-    const t = setTimeout(() => {
+    const isDirty = useStoryStore.getState().isDirty
+    if (!isDirty) return
+
+    const t = setTimeout(async () => {
       // Always save locally
       saveStoryDataToLocal(current.story.id, current)
       const stories = useStoryStore.getState().stories.map(s =>
@@ -57,7 +60,10 @@ export default function Canvas() {
 
       // Also save to Supabase if authenticated
       if (useAuthStore.getState().user) {
-        saveStoryToSupabase(current)
+        const ok = await saveStoryToSupabase(current)
+        if (!ok) {
+          console.warn('Failed to sync to Supabase, data saved locally')
+        }
       }
     }, 1000)
     return () => clearTimeout(t)
