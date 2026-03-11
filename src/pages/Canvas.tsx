@@ -22,6 +22,23 @@ export default function Canvas() {
   const current = useStoryStore(s => s.current)
   const loadStory = useStoryStore(s => s.loadStory)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const isDirty = useStoryStore(s => s.isDirty)
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
+
+  // Track save status for indicator
+  useEffect(() => {
+    if (isDirty) {
+      setSaveStatus('saving')
+    }
+  }, [isDirty])
+
+  useEffect(() => {
+    if (!isDirty && saveStatus === 'saving') {
+      setSaveStatus('saved')
+      const t = setTimeout(() => setSaveStatus('idle'), 2000)
+      return () => clearTimeout(t)
+    }
+  }, [isDirty, saveStatus])
 
   useEffect(() => {
     if (!current && storyId) {
@@ -91,6 +108,14 @@ export default function Canvas() {
               {tab.label}
             </button>
           ))}
+          <div className="ml-auto flex items-center gap-2 px-3 text-xs">
+            {saveStatus === 'saving' && (
+              <span className="text-warning animate-pulse">Salvando...</span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="text-positive">Salvo</span>
+            )}
+          </div>
         </div>
       </div>
 
