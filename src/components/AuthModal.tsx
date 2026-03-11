@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
@@ -6,18 +6,26 @@ import Button from '@/components/ui/Button'
 interface AuthModalProps {
   open: boolean
   onClose: () => void
+  initialMode?: 'login' | 'signup'
 }
 
 type AuthMode = 'login' | 'signup'
 
-export default function AuthModal({ open, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<AuthMode>('login')
+export default function AuthModal({ open, onClose, initialMode = 'login' }: AuthModalProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setMode(initialMode)
+      reset()
+    }
+  }, [open, initialMode])
 
   const reset = () => {
     setEmail('')
