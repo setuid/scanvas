@@ -7,7 +7,6 @@ import { loadStoriesFromLocal, loadStoryDataFromLocal, saveStoriesToLocal } from
 import { fetchStoriesFromSupabase, migrateLocalStoriesToSupabase } from '@/lib/supabaseSync'
 import Layout from '@/components/Layout'
 import Home from '@/pages/Home'
-import Wizard from '@/pages/Wizard'
 import Canvas from '@/pages/Canvas'
 
 async function syncOnLogin(userId: string) {
@@ -109,7 +108,6 @@ export default function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/wizard/:storyId" element={<Wizard />} />
         <Route path="/canvas/:storyId" element={<Canvas />} />
       </Routes>
     </Layout>

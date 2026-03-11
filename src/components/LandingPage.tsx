@@ -14,11 +14,6 @@ export default function LandingPage() {
 
   const features = [
     {
-      title: 'Wizard Guiado',
-      description: 'Crie sua história passo a passo com os frameworks de Campbell, McKee, Snyder e Vogler.',
-      icon: '🧭',
-    },
-    {
       title: 'Canvas Visual',
       description: 'Dashboard completo com personagens, cenas, estrutura narrativa e relacionamentos.',
       icon: '🎨',
@@ -41,7 +36,7 @@ export default function LandingPage() {
         </p>
         <div className="flex flex-col items-center gap-3">
           <Button size="lg" onClick={() => openAuth('signup')}>
-            Criar Conta Grátis
+            Criar Conta
           </Button>
           <button
             onClick={() => openAuth('login')}

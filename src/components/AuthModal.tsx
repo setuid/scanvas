@@ -79,7 +79,7 @@ export default function AuthModal({ open, onClose, initialMode = 'login' }: Auth
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: import.meta.env.VITE_SITE_URL || window.location.origin },
     })
     setLoading(false)
     if (err) {
@@ -96,7 +96,7 @@ export default function AuthModal({ open, onClose, initialMode = 'login' }: Auth
     }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: import.meta.env.VITE_SITE_URL || window.location.origin },
     })
   }
 

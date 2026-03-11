@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStoryStore } from '@/store/useStoryStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -10,7 +10,6 @@ import {
   saveStoryDataToLocal,
 } from '@/lib/localStorage'
 import { saveStoryToSupabase, deleteStoryFromSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
-import { importStoryFromJson, downloadStoryJson } from '@/lib/jsonExport'
 import { createEmptyStory } from '@/types'
 import { genres as genreList } from '@/data/genres'
 import Button from '@/components/ui/Button'
@@ -25,7 +24,6 @@ export default function Dashboard() {
   const loadStory = useStoryStore(s => s.loadStory)
   const addStoryToList = useStoryStore(s => s.addStoryToList)
   const removeStoryFromList = useStoryStore(s => s.removeStoryFromList)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const localStories = loadStoriesFromLocal()
@@ -34,7 +32,7 @@ export default function Dashboard() {
     }
   }, [])
 
-  const createNewStory = (navigateTo: 'wizard' | 'canvas') => {
+  const createNewStory = () => {
     const userId = user?.id || 'local'
     const story = createEmptyStory(userId)
     const data = {
@@ -56,7 +54,7 @@ export default function Dashboard() {
     saveStoryDataToLocal(story.id, data)
     saveStoriesToLocal([...stories, story])
     if (user) saveStoryToSupabase(data)
-    navigate(navigateTo === 'wizard' ? `/wizard/${story.id}` : `/canvas/${story.id}`)
+    navigate(`/canvas/${story.id}`)
   }
 
   const handleOpen = async (storyId: string) => {
@@ -94,38 +92,6 @@ export default function Dashboard() {
     if (user) deleteStoryFromSupabase(storyId)
   }
 
-  const handleExport = (storyId: string) => {
-    const data = loadStoryDataFromLocal(storyId)
-    if (!data) return
-    loadStory(data)
-    setTimeout(() => downloadStoryJson(), 0)
-  }
-
-  const handleImport = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      try {
-        const json = ev.target?.result as string
-        importStoryFromJson(json)
-        const { current } = useStoryStore.getState()
-        if (current) {
-          saveStoryDataToLocal(current.story.id, current)
-          saveStoriesToLocal([...useStoryStore.getState().stories])
-          navigate(`/canvas/${current.story.id}`)
-        }
-      } catch {
-        alert('Erro ao importar arquivo. Verifique se é um JSON válido do Story Canvas.')
-      }
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
 
   const getGenreIcons = (genreIds: string[]) => {
     return genreIds
@@ -183,24 +149,10 @@ export default function Dashboard() {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-center mb-10">
-        <Button size="lg" onClick={() => createNewStory('wizard')}>
-          Começar com o Wizard
-        </Button>
-        <Button variant="secondary" size="lg" onClick={() => createNewStory('canvas')}>
-          Ir direto ao Canvas
-        </Button>
-        <Button variant="ghost" size="lg" onClick={handleImport}>
-          Importar JSON
+        <Button size="lg" onClick={() => createNewStory()}>
+          Nova História
         </Button>
       </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleFileImport}
-        className="hidden"
-      />
 
       {/* Stories list */}
       {activeStories.length > 0 ? (
@@ -249,13 +201,6 @@ export default function Dashboard() {
                           ⧉
                         </button>
                         <button
-                          onClick={() => handleExport(story.id)}
-                          className="p-2 text-text-muted hover:text-text transition-colors cursor-pointer"
-                          title="Exportar JSON"
-                        >
-                          ↓
-                        </button>
-                        <button
                           onClick={() => handleDelete(story.id)}
                           className="p-2 text-text-muted hover:text-negative transition-colors cursor-pointer"
                           title="Excluir"
@@ -273,10 +218,9 @@ export default function Dashboard() {
         <div className="text-center py-16">
           <p className="text-text-muted text-lg mb-2">Nenhuma história ainda.</p>
           <p className="text-text-muted text-sm mb-6">
-            Comece com o Wizard para ser guiado pelos fundamentos narrativos,
-            ou vá direto ao Canvas para construir livremente.
+            Crie sua primeira história e comece a construir no Canvas.
           </p>
-          <Button onClick={() => createNewStory('wizard')}>
+          <Button onClick={() => createNewStory()}>
             Criar sua primeira história
           </Button>
         </div>
