@@ -7,7 +7,8 @@ import Modal from '@/components/ui/Modal'
 const NODE_W = 160
 const NODE_H = 100
 const GAP = 60
-const PAD = 40
+const PAD_LEFT = 100
+const PAD_RIGHT = 40
 const CURVE_H = 80
 const CURVE_TOP = NODE_H + 40
 const LANE_H = 28
@@ -44,13 +45,13 @@ export default function FluxoTab() {
   }, [sortedScenes])
 
   // Layout
-  const totalW = PAD * 2 + sortedScenes.length * (NODE_W + GAP) - GAP
+  const totalW = PAD_LEFT + PAD_RIGHT + sortedScenes.length * (NODE_W + GAP) - GAP
   const swimLanesTop = CURVE_TOP + CURVE_H + 20
   const totalH = showSwimLanes
-    ? swimLanesTop + current.characters.length * (LANE_H + LANE_GAP) + PAD
-    : CURVE_TOP + CURVE_H + PAD
+    ? swimLanesTop + current.characters.length * (LANE_H + LANE_GAP) + PAD_RIGHT
+    : CURVE_TOP + CURVE_H + PAD_RIGHT
 
-  const sceneX = useCallback((i: number) => PAD + i * (NODE_W + GAP), [])
+  const sceneX = useCallback((i: number) => PAD_LEFT + i * (NODE_W + GAP), [])
   const sceneCenter = useCallback((i: number) => sceneX(i) + NODE_W / 2, [sceneX])
 
   // Handle scene click
@@ -283,7 +284,7 @@ export default function FluxoTab() {
 
             {/* Tension curve - zero line */}
             <line
-              x1={PAD}
+              x1={PAD_LEFT}
               y1={tensionY(0)}
               x2={sceneX(sortedScenes.length - 1) + NODE_W}
               y2={tensionY(0)}
@@ -326,8 +327,8 @@ export default function FluxoTab() {
             ))}
 
             {/* Tension labels */}
-            <text x={PAD - 4} y={CURVE_TOP + 4} fill="var(--color-text-muted)" fontSize={9} textAnchor="end">+</text>
-            <text x={PAD - 4} y={CURVE_TOP + CURVE_H} fill="var(--color-text-muted)" fontSize={9} textAnchor="end">-</text>
+            <text x={PAD_LEFT - 4} y={CURVE_TOP + 4} fill="var(--color-text-muted)" fontSize={9} textAnchor="end">+</text>
+            <text x={PAD_LEFT - 4} y={CURVE_TOP + CURVE_H} fill="var(--color-text-muted)" fontSize={9} textAnchor="end">-</text>
 
             {/* Swim lanes */}
             {showSwimLanes && current.characters.map((char, ci) => {
@@ -336,9 +337,9 @@ export default function FluxoTab() {
                 <g key={char.id}>
                   {/* Lane background */}
                   <rect
-                    x={PAD}
+                    x={PAD_LEFT}
                     y={laneY}
-                    width={totalW - PAD * 2}
+                    width={totalW - PAD_LEFT - PAD_RIGHT}
                     height={LANE_H}
                     fill={ci % 2 === 0 ? 'var(--color-surface)' : 'transparent'}
                     opacity={0.3}
@@ -346,13 +347,13 @@ export default function FluxoTab() {
                   />
                   {/* Character label */}
                   <text
-                    x={PAD - 4}
+                    x={PAD_LEFT - 8}
                     y={laneY + LANE_H / 2 + 4}
                     fill="var(--color-text-muted)"
-                    fontSize={10}
+                    fontSize={11}
                     textAnchor="end"
                   >
-                    {(char.name || '?').slice(0, 10)}
+                    {(char.name || '?').slice(0, 12)}
                   </text>
                   {/* Presence dots */}
                   {sortedScenes.map((sc, si) => {
