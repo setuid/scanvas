@@ -8,12 +8,14 @@ import DashboardTab from '@/components/canvas/DashboardTab'
 import StructureTab from '@/components/canvas/StructureTab'
 import CharactersTab from '@/components/canvas/CharactersTab'
 import ScenesTab from '@/components/canvas/ScenesTab'
+import FluxoTab from '@/components/canvas/FluxoTab'
 
 const TABS = [
   { id: 'dashboard', label: 'Visão Geral' },
   { id: 'structure', label: 'Estrutura' },
   { id: 'characters', label: 'Personagens' },
   { id: 'scenes', label: 'Cenas' },
+  { id: 'fluxo', label: 'Fluxo' },
 ]
 
 export default function Canvas() {
@@ -125,6 +127,7 @@ export default function Canvas() {
         {activeTab === 'structure' && <StructureTab />}
         {activeTab === 'characters' && <CharactersTab />}
         {activeTab === 'scenes' && <ScenesTab />}
+        {activeTab === 'fluxo' && <FluxoTab />}
       </div>
     </div>
   )
