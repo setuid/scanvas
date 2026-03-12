@@ -4,11 +4,15 @@ import { useStoryStore } from '@/store/useStoryStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { saveStoryDataToLocal, saveStoriesToLocal, loadStoryDataFromLocal } from '@/lib/localStorage'
 import { saveStoryToSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
+import { downloadStoryMarkdown, downloadStoryPdf } from '@/lib/markdownExport'
+import { downloadStoryJson } from '@/lib/jsonExport'
+import { createShareLink, getShareUrl } from '@/lib/share'
 import DashboardTab from '@/components/canvas/DashboardTab'
 import StructureTab from '@/components/canvas/StructureTab'
 import CharactersTab from '@/components/canvas/CharactersTab'
 import ScenesTab from '@/components/canvas/ScenesTab'
 import FluxoTab from '@/components/canvas/FluxoTab'
+import Modal from '@/components/ui/Modal'
 
 const TABS = [
   { id: 'dashboard', label: 'Visão Geral' },
@@ -26,6 +30,9 @@ export default function Canvas() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const isDirty = useStoryStore(s => s.isDirty)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [sharing, setSharing] = useState(false)
 
   // Track save status for indicator
   useEffect(() => {
@@ -88,6 +95,15 @@ export default function Canvas() {
     return () => clearTimeout(t)
   }, [current])
 
+  const handleShare = async () => {
+    setSharing(true)
+    const id = await createShareLink()
+    if (id) {
+      setShareUrl(getShareUrl(id))
+    }
+    setSharing(false)
+  }
+
   if (!current) {
     return <div className="p-8 text-center text-text-muted">Carregando...</div>
   }
@@ -110,13 +126,28 @@ export default function Canvas() {
               {tab.label}
             </button>
           ))}
-          <div className="ml-auto flex items-center gap-2 px-3 text-xs">
+          <div className="ml-auto flex items-center gap-2 px-3 text-xs shrink-0">
             {saveStatus === 'saving' && (
               <span className="text-warning animate-pulse">Salvando...</span>
             )}
             {saveStatus === 'saved' && (
               <span className="text-positive">Salvo</span>
             )}
+            <button
+              onClick={() => setExportOpen(true)}
+              className="text-text-muted hover:text-text transition-colors cursor-pointer px-2 py-1"
+              title="Exportar"
+            >
+              Exportar
+            </button>
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className="text-text-muted hover:text-gold transition-colors cursor-pointer px-2 py-1"
+              title="Compartilhar"
+            >
+              {sharing ? 'Gerando...' : 'Compartilhar'}
+            </button>
           </div>
         </div>
       </div>
@@ -129,6 +160,60 @@ export default function Canvas() {
         {activeTab === 'scenes' && <ScenesTab />}
         {activeTab === 'fluxo' && <FluxoTab />}
       </div>
+
+      {/* Export Modal */}
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Exportar História">
+        <div className="space-y-2">
+          <button
+            onClick={() => { downloadStoryMarkdown(); setExportOpen(false) }}
+            className="w-full text-left p-3 rounded-lg border border-border hover:border-gold/50 transition-colors cursor-pointer"
+          >
+            <div className="font-medium text-text">Markdown (.md)</div>
+            <p className="text-xs text-text-muted mt-0.5">Texto formatado — ideal para revisar e editar</p>
+          </button>
+          <button
+            onClick={() => { downloadStoryPdf(); setExportOpen(false) }}
+            className="w-full text-left p-3 rounded-lg border border-border hover:border-gold/50 transition-colors cursor-pointer"
+          >
+            <div className="font-medium text-text">PDF</div>
+            <p className="text-xs text-text-muted mt-0.5">Documento formatado para impressão ou envio</p>
+          </button>
+          <button
+            onClick={() => { downloadStoryJson(); setExportOpen(false) }}
+            className="w-full text-left p-3 rounded-lg border border-border hover:border-gold/50 transition-colors cursor-pointer"
+          >
+            <div className="font-medium text-text">Story Canvas (.json)</div>
+            <p className="text-xs text-text-muted mt-0.5">Formato completo — pode ser reimportado no app</p>
+          </button>
+        </div>
+      </Modal>
+
+      {/* Share URL Modal */}
+      <Modal open={!!shareUrl} onClose={() => setShareUrl(null)} title="Link de Compartilhamento">
+        <div className="space-y-3">
+          <p className="text-sm text-text-secondary">
+            Qualquer pessoa com este link pode ver uma versão somente-leitura do outline da sua história.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={shareUrl || ''}
+              readOnly
+              className="input-field flex-1 text-sm"
+              onClick={e => (e.target as HTMLInputElement).select()}
+            />
+            <button
+              onClick={() => {
+                if (shareUrl) {
+                  navigator.clipboard.writeText(shareUrl)
+                }
+              }}
+              className="px-3 py-2 bg-gold text-bg rounded-lg text-sm font-medium hover:bg-gold-hover transition-colors cursor-pointer shrink-0"
+            >
+              Copiar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { fetchStoriesFromSupabase, migrateLocalStoriesToSupabase } from '@/lib/s
 import Layout from '@/components/Layout'
 import Home from '@/pages/Home'
 import Canvas from '@/pages/Canvas'
+import Share from '@/pages/Share'
 
 async function syncOnLogin(userId: string) {
   const setStories = useStoryStore.getState().setStories
@@ -109,6 +110,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/canvas/:storyId" element={<Canvas />} />
+        <Route path="/share/:shareId" element={<Share />} />
       </Routes>
     </Layout>
   )
