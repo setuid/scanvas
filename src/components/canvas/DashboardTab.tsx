@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useStoryStore } from '@/store/useStoryStore'
 import { getFramework } from '@/data/frameworks'
 import { genres as genreList } from '@/data/genres'
@@ -5,6 +6,7 @@ import { archetypes as archetypeList } from '@/data/archetypes'
 import Card from '@/components/ui/Card'
 import InlineEdit from '@/components/ui/InlineEdit'
 import Badge from '@/components/ui/Badge'
+import Modal from '@/components/ui/Modal'
 
 interface DashboardTabProps {
   setActiveTab: (tab: string) => void
@@ -14,6 +16,8 @@ export default function DashboardTab({ setActiveTab }: DashboardTabProps) {
   const current = useStoryStore(s => s.current)!
   const updateStory = useStoryStore(s => s.updateStory)
   const story = current.story
+  const [genreOpen, setGenreOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   const fw = getFramework(story.framework)
 
   const staticScenes = current.scenes.filter(s => s.charge_start === s.charge_end && s.title)
@@ -86,7 +90,7 @@ export default function DashboardTab({ setActiveTab }: DashboardTabProps) {
         </Card>
 
         {/* Genre Card */}
-        <Card clickable onClick={() => {}}>
+        <Card clickable onClick={() => setGenreOpen(true)}>
           <h3 className="text-sm font-medium text-text-muted mb-3 uppercase tracking-wider">Gênero & Tom</h3>
           {story.genre?.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -105,7 +109,7 @@ export default function DashboardTab({ setActiveTab }: DashboardTabProps) {
         </Card>
 
         {/* Theme Card */}
-        <Card>
+        <Card clickable onClick={() => setThemeOpen(true)}>
           <h3 className="text-sm font-medium text-text-muted mb-3 uppercase tracking-wider">Tema</h3>
           {story.theme_central ? (
             <>
@@ -197,6 +201,94 @@ export default function DashboardTab({ setActiveTab }: DashboardTabProps) {
           )}
         </Card>
       </div>
+
+      {/* Genre Modal */}
+      <Modal open={genreOpen} onClose={() => setGenreOpen(false)} title="Gênero & Tom">
+        <div className="space-y-2">
+          {genreList.map(g => {
+            const selected = story.genre?.includes(g.id)
+            return (
+              <button
+                key={g.id}
+                onClick={() => {
+                  const current = story.genre || []
+                  const next = selected
+                    ? current.filter((id: string) => id !== g.id)
+                    : [...current, g.id]
+                  updateStory({ genre: next })
+                }}
+                className={`w-full text-left p-3 rounded-lg border transition-colors cursor-pointer ${
+                  selected
+                    ? 'border-gold bg-gold/10'
+                    : 'border-border hover:border-text-muted'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{g.icon}</span>
+                  <span className={`font-medium ${selected ? 'text-gold' : 'text-text'}`}>{g.name}</span>
+                </div>
+                <p className="text-xs text-text-muted mt-1">{g.description}</p>
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
+
+      {/* Theme Modal */}
+      <Modal open={themeOpen} onClose={() => setThemeOpen(false)} title="Tema">
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Tema Central</label>
+            <input
+              type="text"
+              value={story.theme_central || ''}
+              onChange={e => updateStory({ theme_central: e.target.value })}
+              placeholder="Uma ou duas palavras (ex: Redenção, Identidade)"
+              className="input-field w-full"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Pergunta Temática</label>
+            <input
+              type="text"
+              value={story.theme_question || ''}
+              onChange={e => updateStory({ theme_question: e.target.value })}
+              placeholder="A pergunta que a história tenta responder..."
+              className="input-field w-full"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Valor em Jogo</label>
+            <input
+              type="text"
+              value={story.theme_value || ''}
+              onChange={e => updateStory({ theme_value: e.target.value })}
+              placeholder="O que pode ser ganho ou perdido (ex: Liberdade vs Segurança)"
+              className="input-field w-full"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Declaração Temática</label>
+            <textarea
+              value={story.theme_declaration || ''}
+              onChange={e => updateStory({ theme_declaration: e.target.value })}
+              placeholder="Fala de um personagem secundário que expressa o tema..."
+              className="input-field w-full"
+              rows={2}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Mensagem (opcional)</label>
+            <textarea
+              value={story.theme_message || ''}
+              onChange={e => updateStory({ theme_message: e.target.value })}
+              placeholder="A tese que o autor defende através da narrativa..."
+              className="input-field w-full"
+              rows={2}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
