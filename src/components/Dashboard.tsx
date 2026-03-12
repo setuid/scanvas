@@ -192,17 +192,17 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center shrink-0" onClick={e => e.stopPropagation()}>
                         <button
-                          onClick={() => handleDuplicate(story.id)}
-                          className="p-2 text-text-muted hover:text-text transition-colors cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); handleDuplicate(story.id) }}
+                          className="w-10 h-10 flex items-center justify-center text-text-muted hover:text-text hover:bg-surface-hover rounded-lg transition-colors cursor-pointer text-lg"
                           title="Duplicar"
                         >
                           ⧉
                         </button>
                         <button
-                          onClick={() => handleDelete(story.id)}
-                          className="p-2 text-text-muted hover:text-negative transition-colors cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(story.id) }}
+                          className="w-10 h-10 flex items-center justify-center text-text-muted hover:text-negative hover:bg-negative/10 rounded-lg transition-colors cursor-pointer text-lg"
                           title="Excluir"
                         >
                           ✕
