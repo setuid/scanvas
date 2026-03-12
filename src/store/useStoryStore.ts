@@ -91,6 +91,10 @@ interface StoryStore {
   updateRelation: (id: string, fields: Partial<CharacterRelation>) => void
   removeRelation: (id: string) => void
 
+  // Scene connections
+  addSceneConnection: (conn: SceneConnection) => void
+  removeSceneConnection: (id: string) => void
+
   // World notes
   addWorldNote: (note: WorldNote) => void
   updateWorldNote: (id: string, fields: Partial<WorldNote>) => void
@@ -206,6 +210,9 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
       current: {
         ...s.current,
         scenes: s.current.scenes.filter(sc => sc.id !== id),
+        sceneConnections: s.current.sceneConnections.filter(
+          c => c.scene_from_id !== id && c.scene_to_id !== id
+        ),
       },
       isDirty: true,
     }
@@ -281,6 +288,21 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
       current: {
         ...s.current,
         relations: s.current.relations.filter(r => r.id !== id),
+      },
+      isDirty: true,
+    }
+  }),
+
+  addSceneConnection: (conn) => set(s => {
+    if (!s.current) return s
+    return { current: { ...s.current, sceneConnections: [...s.current.sceneConnections, conn] }, isDirty: true }
+  }),
+  removeSceneConnection: (id) => set(s => {
+    if (!s.current) return s
+    return {
+      current: {
+        ...s.current,
+        sceneConnections: s.current.sceneConnections.filter(c => c.id !== id),
       },
       isDirty: true,
     }
