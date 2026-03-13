@@ -7,7 +7,7 @@ export function exportStoryToMarkdown(): string {
   const { current } = useStoryStore.getState()
   if (!current) throw new Error('No story loaded')
 
-  const { story, acts, characters, scenes, relations, subplots, promises, worldNotes } = current
+  const { story, acts, characters, scenes, relations, subplots, promises, worldNotes, sceneConnections } = current
   const fw = getFramework(story.framework)
   const sortedScenes = [...scenes].sort((a, b) => a.sort_order - b.sort_order)
   const lines: string[] = []
@@ -163,6 +163,23 @@ export function exportStoryToMarkdown(): string {
       }
       blank()
     }
+  }
+
+  // Scene Flow (connections)
+  if (sceneConnections.length > 0) {
+    add('---')
+    blank()
+    add('## Fluxo de Cenas')
+    blank()
+    for (const conn of sceneConnections) {
+      const from = scenes.find(s => s.id === conn.scene_from_id)
+      const to = scenes.find(s => s.id === conn.scene_to_id)
+      if (from && to) {
+        const label = conn.label ? ` — ${conn.label}` : ''
+        add(`- **${from.title || 'Sem título'}** → **${to.title || 'Sem título'}**${label}`)
+      }
+    }
+    blank()
   }
 
   // Subplots

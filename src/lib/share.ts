@@ -89,6 +89,7 @@ export async function loadShareData(shareId: string): Promise<ShareData | null> 
  * Get the full share URL from a share ID.
  */
 export function getShareUrl(shareId: string): string {
-  const base = import.meta.env.VITE_SITE_URL || window.location.origin
-  return `${base}/share/${shareId}`
+  // Use everything before the hash (includes base path like /scanvas/)
+  const base = window.location.href.split('#')[0].replace(/\/$/, '')
+  return `${base}#/share/${shareId}`
 }
