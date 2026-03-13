@@ -6,7 +6,7 @@ import { saveStoryDataToLocal, saveStoriesToLocal, loadStoryDataFromLocal } from
 import { saveStoryToSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import { downloadStoryMarkdown, downloadStoryPdf } from '@/lib/markdownExport'
 import { downloadStoryJson } from '@/lib/jsonExport'
-import { createShareLink, getShareUrl } from '@/lib/share'
+import { createShareLink, getShareUrl, type ShareResult } from '@/lib/share'
 import DashboardTab from '@/components/canvas/DashboardTab'
 import StructureTab from '@/components/canvas/StructureTab'
 import CharactersTab from '@/components/canvas/CharactersTab'
@@ -32,6 +32,7 @@ export default function Canvas() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const [exportOpen, setExportOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [shareError, setShareError] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
 
   // Track save status for indicator
@@ -97,9 +98,17 @@ export default function Canvas() {
 
   const handleShare = async () => {
     setSharing(true)
-    const id = await createShareLink()
-    if (id) {
-      setShareUrl(getShareUrl(id))
+    setShareError(null)
+    const result = await createShareLink()
+    if (result.ok) {
+      setShareUrl(getShareUrl(result.shareId))
+    } else {
+      const messages: Record<ShareResult & { ok: false } extends { reason: infer R } ? R & string : never, string> = {
+        'no-supabase': 'Compartilhamento não disponível — configuração do servidor ausente. Use "Exportar" para salvar sua história.',
+        'no-story': 'Nenhuma história carregada para compartilhar.',
+        'upload-failed': 'Falha ao gerar o link. Verifique sua conexão e tente novamente.',
+      }
+      setShareError(messages[result.reason])
     }
     setSharing(false)
   }
@@ -186,6 +195,11 @@ export default function Canvas() {
             <p className="text-xs text-text-muted mt-0.5">Formato completo — pode ser reimportado no app</p>
           </button>
         </div>
+      </Modal>
+
+      {/* Share Error Modal */}
+      <Modal open={!!shareError} onClose={() => setShareError(null)} title="Erro ao Compartilhar">
+        <p className="text-sm text-text-secondary">{shareError}</p>
       </Modal>
 
       {/* Share URL Modal */}
