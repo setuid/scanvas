@@ -20,11 +20,15 @@ export interface ShareData {
  * Upload a read-only snapshot of the current story to Supabase Storage.
  * Returns the share ID (UUID) that can be used to construct the share URL.
  */
-export async function createShareLink(): Promise<string | null> {
-  if (!supabase) return null
+export type ShareResult =
+  | { ok: true; shareId: string }
+  | { ok: false; reason: 'no-supabase' | 'no-story' | 'upload-failed' }
+
+export async function createShareLink(): Promise<ShareResult> {
+  if (!supabase) return { ok: false, reason: 'no-supabase' }
 
   const { current } = useStoryStore.getState()
-  if (!current) return null
+  if (!current) return { ok: false, reason: 'no-story' }
 
   const shareId = crypto.randomUUID()
   const markdown = exportStoryToMarkdown()
@@ -52,10 +56,10 @@ export async function createShareLink(): Promise<string | null> {
 
   if (error) {
     console.error('Share upload failed:', error)
-    return null
+    return { ok: false, reason: 'upload-failed' }
   }
 
-  return shareId
+  return { ok: true, shareId }
 }
 
 /**
