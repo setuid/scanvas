@@ -12,6 +12,7 @@ import StructureTab from '@/components/canvas/StructureTab'
 import CharactersTab from '@/components/canvas/CharactersTab'
 import ScenesTab from '@/components/canvas/ScenesTab'
 import FluxoTab from '@/components/canvas/FluxoTab'
+import GuideTab from '@/components/canvas/GuideTab'
 import Modal from '@/components/ui/Modal'
 
 const TABS = [
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'characters', label: 'Personagens' },
   { id: 'scenes', label: 'Cenas' },
   { id: 'fluxo', label: 'Fluxo' },
+  { id: 'guide', label: 'Guia' },
 ]
 
 export default function Canvas() {
@@ -168,6 +170,7 @@ export default function Canvas() {
         {activeTab === 'characters' && <CharactersTab />}
         {activeTab === 'scenes' && <ScenesTab />}
         {activeTab === 'fluxo' && <FluxoTab />}
+        {activeTab === 'guide' && <GuideTab onNavigate={setActiveTab} />}
       </div>
 
       {/* Export Modal */}

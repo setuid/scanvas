@@ -65,6 +65,9 @@ interface StoryStore {
   setActs: (acts: StoryAct[]) => void
   updateAct: (id: string, fields: Partial<StoryAct>) => void
 
+  // Act guiding answer
+  updateActGuidingAnswer: (actIndex: number, answer: string) => void
+
   // Characters
   addCharacter: (char: Character) => void
   updateCharacter: (id: string, fields: Partial<Character>) => void
@@ -150,6 +153,19 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
       current: {
         ...s.current,
         acts: s.current.acts.map(a => a.id === id ? { ...a, ...fields } : a),
+      },
+      isDirty: true,
+    }
+  }),
+
+  updateActGuidingAnswer: (actIndex, answer) => set(s => {
+    if (!s.current) return s
+    return {
+      current: {
+        ...s.current,
+        acts: s.current.acts.map(a =>
+          a.act_index === actIndex ? { ...a, guiding_answer: answer } : a
+        ),
       },
       isDirty: true,
     }
