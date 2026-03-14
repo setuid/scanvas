@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useStoryStore } from '@/store/useStoryStore'
 import { supabase } from '@/lib/supabase'
+import { APP_VERSION } from '@/lib/version'
 import AuthModal from '@/components/AuthModal'
 import type { ReactNode } from 'react'
 
@@ -31,6 +32,9 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <span className="text-gold font-serif text-xl font-bold">Story Canvas</span>
+            </Link>
+            <Link to="/changelog" className="text-xs text-text-muted hover:text-gold transition-colors" title="Ver changelog">
+              v{APP_VERSION}
             </Link>
 
             {current && (
@@ -74,6 +78,16 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-bg-secondary/50 py-3">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between text-xs text-text-muted">
+          <span className="font-serif text-text-muted/70">Story Canvas</span>
+          <Link to="/changelog" className="hover:text-gold transition-colors">
+            v{APP_VERSION} — Changelog
+          </Link>
+        </div>
+      </footer>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
