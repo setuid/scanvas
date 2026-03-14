@@ -74,6 +74,7 @@ export interface StoryAct {
   act_index: number
   act_name: string
   description: string
+  guiding_answer?: string
 }
 
 // --- Character ---
