@@ -9,6 +9,7 @@ import Layout from '@/components/Layout'
 import Home from '@/pages/Home'
 import Canvas from '@/pages/Canvas'
 import Share from '@/pages/Share'
+import Changelog from '@/pages/Changelog'
 
 async function syncOnLogin(userId: string) {
   const setStories = useStoryStore.getState().setStories
@@ -111,6 +112,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/canvas/:storyId" element={<Canvas />} />
         <Route path="/share/:shareId" element={<Share />} />
+        <Route path="/changelog" element={<Changelog />} />
       </Routes>
     </Layout>
   )
