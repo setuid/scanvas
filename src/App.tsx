@@ -3,8 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useStoryStore } from '@/store/useStoryStore'
 import { supabase } from '@/lib/supabase'
-import { loadStoriesFromLocal, loadStoryDataFromLocal, saveStoriesToLocal } from '@/lib/localStorage'
-import { fetchStoriesFromSupabase, migrateLocalStoriesToSupabase } from '@/lib/supabaseSync'
+import { loadStoriesFromLocal, loadStoryDataFromLocal, saveStoriesToLocal, saveStoryDataToLocal } from '@/lib/localStorage'
+import { fetchStoriesFromSupabase, migrateLocalStoriesToSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import Layout from '@/components/Layout'
 import Home from '@/pages/Home'
 import Canvas from '@/pages/Canvas'
@@ -51,6 +51,20 @@ async function syncOnLogin(userId: string) {
     if (allRemote.length > 0) {
       setStories(allRemote)
       saveStoriesToLocal(allRemote)
+
+      // 5. Download full story data for each remote story to update local cache
+      await Promise.all(
+        allRemote.map(async (s) => {
+          try {
+            const remoteData = await loadStoryFromSupabase(s.id)
+            if (remoteData) {
+              saveStoryDataToLocal(s.id, remoteData)
+            }
+          } catch {
+            // Non-critical — story will be fetched on open
+          }
+        })
+      )
     } else if (remoteStories.length === 0 && localStories.length > 0) {
       // Keep local stories if remote is empty
       setStories(localStories)

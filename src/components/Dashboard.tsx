@@ -58,9 +58,17 @@ export default function Dashboard() {
   }
 
   const handleOpen = async (storyId: string) => {
-    let data = loadStoryDataFromLocal(storyId)
-    if (!data && user) {
+    let data = null
+    if (user) {
+      // Authenticated: Supabase is the source of truth
       data = await loadStoryFromSupabase(storyId)
+      if (data) {
+        saveStoryDataToLocal(storyId, data)
+      }
+    }
+    // Fallback to local
+    if (!data) {
+      data = loadStoryDataFromLocal(storyId)
     }
     if (data) {
       loadStory(data)
@@ -69,9 +77,12 @@ export default function Dashboard() {
   }
 
   const handleDuplicate = async (storyId: string) => {
-    let data = loadStoryDataFromLocal(storyId)
-    if (!data && user) {
+    let data = null
+    if (user) {
       data = await loadStoryFromSupabase(storyId)
+    }
+    if (!data) {
+      data = loadStoryDataFromLocal(storyId)
     }
     if (!data) return
     const newId = crypto.randomUUID()

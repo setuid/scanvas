@@ -54,20 +54,32 @@ export default function Canvas() {
 
   useEffect(() => {
     if (!current && storyId) {
-      const data = loadStoryDataFromLocal(storyId)
-      if (data) {
-        loadStory(data)
-      } else if (useAuthStore.getState().user) {
-        // Try loading from Supabase if local not found
+      const user = useAuthStore.getState().user
+      if (user) {
+        // Authenticated: Supabase is the source of truth
         loadStoryFromSupabase(storyId).then(remoteData => {
           if (remoteData) {
             loadStory(remoteData)
+            // Update local cache
+            saveStoryDataToLocal(storyId, remoteData)
           } else {
-            navigate('/')
+            // Fallback to local if Supabase fails
+            const localData = loadStoryDataFromLocal(storyId)
+            if (localData) {
+              loadStory(localData)
+            } else {
+              navigate('/')
+            }
           }
         })
       } else {
-        navigate('/')
+        // Not authenticated: use localStorage only
+        const data = loadStoryDataFromLocal(storyId)
+        if (data) {
+          loadStory(data)
+        } else {
+          navigate('/')
+        }
       }
     }
   }, [storyId])
@@ -79,20 +91,23 @@ export default function Canvas() {
     if (!isDirty) return
 
     const t = setTimeout(async () => {
-      // Always save locally
+      // Always save locally first
       saveStoryDataToLocal(current.story.id, current)
       const stories = useStoryStore.getState().stories.map(s =>
         s.id === current.story.id ? current.story : s
       )
       saveStoriesToLocal(stories)
-      useStoryStore.getState().markClean()
 
-      // Also save to Supabase if authenticated
+      // Save to Supabase if authenticated — only markClean after success
       if (useAuthStore.getState().user) {
         const ok = await saveStoryToSupabase(current)
-        if (!ok) {
-          console.warn('Failed to sync to Supabase, data saved locally')
+        if (ok) {
+          useStoryStore.getState().markClean()
+        } else {
+          console.warn('Failed to sync to Supabase, will retry on next change')
         }
+      } else {
+        useStoryStore.getState().markClean()
       }
     }, 1000)
     return () => clearTimeout(t)
