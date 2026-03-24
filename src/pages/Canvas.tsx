@@ -31,11 +31,12 @@ export default function Canvas() {
   const loadStory = useStoryStore(s => s.loadStory)
   const [activeTab, setActiveTab] = useState('dashboard')
   const isDirty = useStoryStore(s => s.isDirty)
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('idle')
   const [exportOpen, setExportOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [shareError, setShareError] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
+  const [saveRetry, setSaveRetry] = useState(0)
 
   // Track save status for indicator
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function Canvas() {
   }, [isDirty])
 
   useEffect(() => {
-    if (!isDirty && saveStatus === 'saving') {
+    if (!isDirty && (saveStatus === 'saving' || saveStatus === 'error')) {
       setSaveStatus('saved')
       const t = setTimeout(() => setSaveStatus('idle'), 2000)
       return () => clearTimeout(t)
@@ -89,8 +90,8 @@ export default function Canvas() {
   // to ensure we always save the most recent data.
   useEffect(() => {
     if (!current) return
-    const isDirty = useStoryStore.getState().isDirty
-    if (!isDirty) return
+    const isDirtyNow = useStoryStore.getState().isDirty
+    if (!isDirtyNow) return
 
     const storyId = current.story.id
 
@@ -112,14 +113,16 @@ export default function Canvas() {
         if (ok) {
           useStoryStore.getState().markClean()
         } else {
-          console.warn('Failed to sync to Supabase, will retry on next change')
+          setSaveStatus('error')
+          console.warn('Failed to sync to Supabase, will retry in 5s')
+          setTimeout(() => setSaveRetry(n => n + 1), 5000)
         }
       } else {
         useStoryStore.getState().markClean()
       }
     }, 1000)
     return () => clearTimeout(t)
-  }, [current])
+  }, [current, saveRetry])
 
   const handleShare = async () => {
     setSharing(true)
@@ -163,6 +166,9 @@ export default function Canvas() {
           <div className="ml-auto flex items-center gap-2 px-3 text-xs shrink-0">
             {saveStatus === 'saving' && (
               <span className="text-warning animate-pulse">Salvando...</span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-red-400 animate-pulse">Erro ao salvar — tentando novamente…</span>
             )}
             {saveStatus === 'saved' && (
               <span className="text-positive">Salvo</span>

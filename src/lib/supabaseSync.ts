@@ -247,19 +247,25 @@ async function _doSave(data: StoryData): Promise<boolean> {
       .upsert(storyRow, { onConflict: 'id' })
     if (storyErr) throw storyErr
 
-    // Phase 4: Insert parent child tables
+    // Phase 4a: Insert tables that only reference stories (no child-to-child FK)
     await Promise.all([
       insertRows('story_acts', actRows),
       insertRows('characters', charRows),
-      insertRows('scenes', sceneRows),
       insertRows('subplots', subplotRows),
-      insertRows('promises', promiseRows),
-      insertRows('information_reveals', revealRows),
       insertRows('world_notes', worldRows),
       insertRows('board_notes', boardRows),
     ])
 
-    // Phase 5: Insert child-of-child tables (FK deps on characters/scenes)
+    // Phase 4b: Insert scenes (FK → subplots via subplot_id)
+    await insertRows('scenes', sceneRows)
+
+    // Phase 4c: Insert tables that reference scenes
+    await Promise.all([
+      insertRows('promises', promiseRows),
+      insertRows('information_reveals', revealRows),
+    ])
+
+    // Phase 5: Insert child-of-child tables (FK deps on characters + scenes)
     await Promise.all([
       insertRows('character_relations', relationRows),
       insertRows('scene_connections', connectionRows),
@@ -267,8 +273,9 @@ async function _doSave(data: StoryData): Promise<boolean> {
     ])
 
     return true
-  } catch (err) {
-    console.error('Failed to save story to Supabase:', err)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Failed to save story to Supabase:', msg, err)
     return false
   }
 }
