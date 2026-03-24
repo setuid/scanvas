@@ -1,6 +1,19 @@
-export const APP_VERSION = '0.3.0'
+export const APP_VERSION = '0.4.0'
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: '0.4.0',
+    date: '2026-03-24',
+    items: [
+      'Correcao critica: dados (personagens, cenas, acts) nao salvavam no Supabase — campo desconhecido causava falha silenciosa e perda de dados',
+      'Correcao: tela de "Carregando..." infinita apos logout',
+      'Sincronizacao entre dispositivos: Supabase agora e a fonte de verdade quando autenticado',
+      'Dados baixados do servidor ao fazer login, garantindo cache local atualizado',
+      'markClean() so executa apos confirmacao do Supabase, evitando perda de retry em falhas',
+      'URL de compartilhamento corrigida para incluir /scanvas/ e # (HashRouter)',
+      'Fluxo de cenas (conexoes) incluido no export e compartilhamento',
+    ],
+  },
   {
     version: '0.3.0',
     date: '2026-03-14',
@@ -8,6 +21,8 @@ export const changelog: ChangelogEntry[] = [
       'Nova aba "Guia" com Diagnostico Narrativo e Guia Socratico por framework',
       'Diagnostico automatico detecta lacunas na estrutura, personagens ausentes, tensao estagnada e promessas abertas',
       'Guia Socratico com navegacao entre estagios, perguntas reflexivas e campo de resposta persistente',
+      'Pagina de Changelog com historico de versoes',
+      'Versao do app visivel no header e footer',
     ],
   },
   {

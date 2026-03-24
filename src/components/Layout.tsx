@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useStoryStore } from '@/store/useStoryStore'
 import { supabase } from '@/lib/supabase'
@@ -13,6 +13,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
   const current = useStoryStore(s => s.current)
   const isDirty = useStoryStore(s => s.isDirty)
@@ -22,6 +23,7 @@ export default function Layout({ children }: LayoutProps) {
     if (supabase) await supabase.auth.signOut()
     useAuthStore.getState().setUser(null)
     useStoryStore.getState().closeStory()
+    navigate('/')
   }
 
   return (

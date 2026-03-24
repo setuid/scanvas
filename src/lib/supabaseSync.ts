@@ -9,6 +9,20 @@ import type {
 // Story Canvas — Supabase Sync Layer
 // ============================================================
 
+// Fields that exist in TypeScript types but NOT in Supabase tables.
+// Strip these before inserting to prevent "column does not exist" errors
+// that would abort the entire save and cause data loss.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripExtraFields(rows: any[], fieldsToRemove: string[]): any[] {
+  return rows.map(row => {
+    const cleaned = { ...row }
+    for (const f of fieldsToRemove) {
+      delete cleaned[f]
+    }
+    return cleaned
+  })
+}
+
 interface StoryData {
   story: Story
   acts: StoryAct[]
@@ -136,8 +150,10 @@ export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
     // Phase 4: Insert parent child tables (characters, scenes, subplots, acts, etc.)
     // Add sort_order to characters based on array position
     const charactersWithOrder = data.characters.map((c, i) => ({ ...c, sort_order: i }))
+    // Strip fields that don't exist in Supabase tables
+    const cleanedActs = stripExtraFields(data.acts, ['guiding_answer'])
     await Promise.all([
-      insertRows('story_acts', data.acts),
+      insertRows('story_acts', cleanedActs),
       insertRows('characters', charactersWithOrder),
       insertRows('scenes', data.scenes),
       insertRows('subplots', data.subplots),
