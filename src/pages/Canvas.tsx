@@ -85,22 +85,30 @@ export default function Canvas() {
   }, [storyId])
 
   // Auto-save with debounce (localStorage + Supabase)
+  // Reads latest state from the store at save time (not from the closure)
+  // to ensure we always save the most recent data.
   useEffect(() => {
     if (!current) return
     const isDirty = useStoryStore.getState().isDirty
     if (!isDirty) return
 
+    const storyId = current.story.id
+
     const t = setTimeout(async () => {
+      // Read the LATEST state from the store at save time
+      const latest = useStoryStore.getState().current
+      if (!latest || latest.story.id !== storyId) return
+
       // Always save locally first
-      saveStoryDataToLocal(current.story.id, current)
+      saveStoryDataToLocal(storyId, latest)
       const stories = useStoryStore.getState().stories.map(s =>
-        s.id === current.story.id ? current.story : s
+        s.id === storyId ? latest.story : s
       )
       saveStoriesToLocal(stories)
 
       // Save to Supabase if authenticated — only markClean after success
       if (useAuthStore.getState().user) {
-        const ok = await saveStoryToSupabase(current)
+        const ok = await saveStoryToSupabase(latest)
         if (ok) {
           useStoryStore.getState().markClean()
         } else {

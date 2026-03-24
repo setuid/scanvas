@@ -9,18 +9,101 @@ import type {
 // Story Canvas — Supabase Sync Layer
 // ============================================================
 
-// Fields that exist in TypeScript types but NOT in Supabase tables.
-// Strip these before inserting to prevent "column does not exist" errors
-// that would abort the entire save and cause data loss.
+// --- Column whitelists ---
+// Only send these columns to Supabase. This prevents:
+// 1. "column does not exist" errors from extra TS-only fields
+// 2. NOT NULL violations from mixed batches where some rows have
+//    DB-generated fields (created_at, updated_at) and others don't.
+//    PostgREST uses column keys from the first row in a batch —
+//    if it has created_at but a later row doesn't, PostgREST sends
+//    NULL for the missing field, which violates NOT NULL constraints.
+
+const STORY_COLS: (keyof Story)[] = [
+  'id', 'user_id', 'title', 'logline', 'premise', 'inciting_incident',
+  'genre', 'framework', 'theme_central', 'theme_question', 'theme_message',
+  'theme_value', 'theme_declaration', 'parent_story_id', 'fork_point',
+  'status', 'created_at', 'updated_at',
+]
+
+const ACT_COLS = [
+  'id', 'story_id', 'framework', 'act_index', 'act_name', 'description',
+  // Note: guiding_answer deliberately excluded — column may not exist in DB yet
+] as const
+
+const CHARACTER_COLS = [
+  'id', 'story_id', 'name', 'role', 'archetypes', 'desire', 'need',
+  'fear', 'flaw', 'save_the_cat', 'arc', 'backstory', 'notes', 'sort_order',
+  // created_at, updated_at excluded — let DB assign defaults
+] as const
+
+const SCENE_COLS = [
+  'id', 'story_id', 'title', 'act_index', 'subplot_id', 'characters',
+  'value_at_stake', 'charge_start', 'charge_end', 'conflict', 'change',
+  'gap_expected', 'gap_actual', 'weight', 'position_x', 'position_y',
+  'sort_order', 'notes',
+  // created_at, updated_at excluded — let DB assign defaults
+] as const
+
+const RELATION_COLS = [
+  'id', 'story_id', 'character_a_id', 'character_b_id', 'label', 'nature',
+  'temporal_changes', 'notes',
+] as const
+
+const CONNECTION_COLS = [
+  'id', 'story_id', 'scene_from_id', 'scene_to_id', 'label',
+] as const
+
+const SUBPLOT_COLS = [
+  'id', 'story_id', 'name', 'type', 'characters', 'theme_connection',
+  'arc_start', 'arc_development', 'arc_resolution', 'notes',
+] as const
+
+const PROMISE_COLS = [
+  'id', 'story_id', 'name', 'type', 'setup_scene_id', 'payoff_scene_id',
+  'status', 'notes',
+] as const
+
+const REVEAL_COLS = [
+  'id', 'story_id', 'description', 'scenes_known_by',
+  'reader_reveal_scene_id', 'dramatic_irony', 'notes',
+] as const
+
+const WORLD_NOTE_COLS = [
+  'id', 'story_id', 'category', 'title', 'content',
+  'linked_characters', 'linked_scenes', 'linked_promises',
+] as const
+
+const BOARD_NOTE_COLS = [
+  'id', 'story_id', 'content', 'position_x', 'position_y', 'color',
+] as const
+
+const ARC_POINT_COLS = [
+  'id', 'story_id', 'character_id', 'scene_id', 'level', 'notes',
+] as const
+
+// Pick only whitelisted columns from each row
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function stripExtraFields(rows: any[], fieldsToRemove: string[]): any[] {
+function pickColumns(rows: any[], cols: readonly string[]): any[] {
   return rows.map(row => {
-    const cleaned = { ...row }
-    for (const f of fieldsToRemove) {
-      delete cleaned[f]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out: any = {}
+    for (const c of cols) {
+      if (c in row) out[c] = row[c]
     }
-    return cleaned
+    return out
   })
+}
+
+// --- Save mutex ---
+// Prevents concurrent saves from interleaving deletes and inserts,
+// which would corrupt data.
+let _saveLock: Promise<void> = Promise.resolve()
+
+function withSaveLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _saveLock
+  let resolve: () => void
+  _saveLock = new Promise<void>(r => { resolve = r })
+  return prev.then(fn).finally(() => resolve!())
 }
 
 interface StoryData {
@@ -108,28 +191,45 @@ export async function loadStoryFromSupabase(storyId: string): Promise<StoryData 
   }
 }
 
-// --- Save full story (upsert) ---
+// --- Save full story ---
+// Uses a mutex to prevent concurrent saves from interleaving.
 // FK-aware ordering: delete children first, then parents; insert parents first, then children.
 
 export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
+  return withSaveLock(() => _doSave(data))
+}
+
+async function _doSave(data: StoryData): Promise<boolean> {
   if (!supabase) return false
 
   const storyId = data.story.id
 
+  // Prepare rows: whitelist columns and add sort_order for characters
+  const storyRow = pickColumns([data.story], STORY_COLS)[0]
+  const actRows = pickColumns(data.acts, ACT_COLS)
+  const charRows = pickColumns(
+    data.characters.map((c, i) => ({ ...c, sort_order: i })),
+    CHARACTER_COLS,
+  )
+  const sceneRows = pickColumns(data.scenes, SCENE_COLS)
+  const subplotRows = pickColumns(data.subplots, SUBPLOT_COLS)
+  const promiseRows = pickColumns(data.promises, PROMISE_COLS)
+  const revealRows = pickColumns(data.informationReveals, REVEAL_COLS)
+  const worldRows = pickColumns(data.worldNotes, WORLD_NOTE_COLS)
+  const boardRows = pickColumns(data.boardNotes, BOARD_NOTE_COLS)
+  const relationRows = pickColumns(data.relations, RELATION_COLS)
+  const connectionRows = pickColumns(data.sceneConnections, CONNECTION_COLS)
+  const arcRows = pickColumns(data.characterArcPoints, ARC_POINT_COLS)
+
   try {
     // Phase 1: Delete child tables that have FK references to other child tables
-    // character_arc_points → characters, scenes
-    // scene_connections → scenes
-    // character_relations → characters
-    // promises → scenes (nullable FK, but still)
-    // information_reveals → scenes (nullable FK)
     await Promise.all([
       deleteRows('character_arc_points', storyId),
       deleteRows('scene_connections', storyId),
       deleteRows('character_relations', storyId),
     ])
 
-    // Phase 2: Delete the remaining child tables (no cross-child FK deps)
+    // Phase 2: Delete the remaining child tables
     await Promise.all([
       deleteRows('story_acts', storyId),
       deleteRows('characters', storyId),
@@ -144,30 +244,26 @@ export async function saveStoryToSupabase(data: StoryData): Promise<boolean> {
     // Phase 3: Upsert the story itself
     const { error: storyErr } = await supabase
       .from('stories')
-      .upsert(data.story, { onConflict: 'id' })
+      .upsert(storyRow, { onConflict: 'id' })
     if (storyErr) throw storyErr
 
-    // Phase 4: Insert parent child tables (characters, scenes, subplots, acts, etc.)
-    // Add sort_order to characters based on array position
-    const charactersWithOrder = data.characters.map((c, i) => ({ ...c, sort_order: i }))
-    // Strip fields that don't exist in Supabase tables
-    const cleanedActs = stripExtraFields(data.acts, ['guiding_answer'])
+    // Phase 4: Insert parent child tables
     await Promise.all([
-      insertRows('story_acts', cleanedActs),
-      insertRows('characters', charactersWithOrder),
-      insertRows('scenes', data.scenes),
-      insertRows('subplots', data.subplots),
-      insertRows('promises', data.promises),
-      insertRows('information_reveals', data.informationReveals),
-      insertRows('world_notes', data.worldNotes),
-      insertRows('board_notes', data.boardNotes),
+      insertRows('story_acts', actRows),
+      insertRows('characters', charRows),
+      insertRows('scenes', sceneRows),
+      insertRows('subplots', subplotRows),
+      insertRows('promises', promiseRows),
+      insertRows('information_reveals', revealRows),
+      insertRows('world_notes', worldRows),
+      insertRows('board_notes', boardRows),
     ])
 
     // Phase 5: Insert child-of-child tables (FK deps on characters/scenes)
     await Promise.all([
-      insertRows('character_relations', data.relations),
-      insertRows('scene_connections', data.sceneConnections),
-      insertRows('character_arc_points', data.characterArcPoints),
+      insertRows('character_relations', relationRows),
+      insertRows('scene_connections', connectionRows),
+      insertRows('character_arc_points', arcRows),
     ])
 
     return true
@@ -186,6 +282,7 @@ async function deleteRows(table: string, storyId: string) {
   if (error) throw error
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function insertRows(table: string, rows: any[]) {
   if (!supabase || rows.length === 0) return
   const { error } = await supabase
@@ -222,7 +319,6 @@ export async function migrateLocalStoriesToSupabase(
   let migrated = 0
 
   for (const data of localStories) {
-    // Update user_id to the authenticated user
     const migratedData: StoryData = {
       ...data,
       story: { ...data.story, user_id: userId },
