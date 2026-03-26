@@ -37,21 +37,10 @@ export default function Canvas() {
   const [shareError, setShareError] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
   const [saveRetry, setSaveRetry] = useState(0)
-
-  // Track save status for indicator
+  // Show "Salvando..." immediately when user makes a change
   useEffect(() => {
-    if (isDirty) {
-      setSaveStatus('saving')
-    }
+    if (isDirty) setSaveStatus('saving')
   }, [isDirty])
-
-  useEffect(() => {
-    if (!isDirty && (saveStatus === 'saving' || saveStatus === 'error')) {
-      setSaveStatus('saved')
-      const t = setTimeout(() => setSaveStatus('idle'), 2000)
-      return () => clearTimeout(t)
-    }
-  }, [isDirty, saveStatus])
 
   useEffect(() => {
     if (!current && storyId) {
@@ -112,6 +101,8 @@ export default function Canvas() {
         const ok = await saveStoryToSupabase(latest)
         if (ok) {
           useStoryStore.getState().markClean()
+          setSaveStatus('saved')
+          setTimeout(() => setSaveStatus('idle'), 2000)
         } else {
           setSaveStatus('error')
           console.warn('Failed to sync to Supabase, will retry in 5s')
@@ -119,6 +110,8 @@ export default function Canvas() {
         }
       } else {
         useStoryStore.getState().markClean()
+        setSaveStatus('saved')
+        setTimeout(() => setSaveStatus('idle'), 2000)
       }
     }, 1000)
     return () => clearTimeout(t)
