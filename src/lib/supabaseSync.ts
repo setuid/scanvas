@@ -142,6 +142,9 @@ export async function fetchStoriesFromSupabase(): Promise<Story[]> {
 export async function loadStoryFromSupabase(storyId: string): Promise<StoryData | null> {
   if (!supabase) return null
 
+  // Fetch all tables in parallel.
+  // Characters and scenes use sort_order when the column exists;
+  // if the migration hasn't been applied yet, fall back to no ordering.
   const [
     storyRes,
     actsRes,
@@ -158,9 +161,15 @@ export async function loadStoryFromSupabase(storyId: string): Promise<StoryData 
   ] = await Promise.all([
     supabase.from('stories').select('*').eq('id', storyId).single(),
     supabase.from('story_acts').select('*').eq('story_id', storyId).order('act_index'),
-    supabase.from('characters').select('*').eq('story_id', storyId).order('sort_order'),
+    supabase.from('characters').select('*').eq('story_id', storyId).order('sort_order')
+      .then(res => res.error?.code === 'PGRST204'
+        ? supabase!.from('characters').select('*').eq('story_id', storyId)
+        : res),
     supabase.from('character_relations').select('*').eq('story_id', storyId),
-    supabase.from('scenes').select('*').eq('story_id', storyId).order('sort_order'),
+    supabase.from('scenes').select('*').eq('story_id', storyId).order('sort_order')
+      .then(res => res.error?.code === 'PGRST204'
+        ? supabase!.from('scenes').select('*').eq('story_id', storyId)
+        : res),
     supabase.from('scene_connections').select('*').eq('story_id', storyId),
     supabase.from('subplots').select('*').eq('story_id', storyId),
     supabase.from('promises').select('*').eq('story_id', storyId),
@@ -247,19 +256,25 @@ async function _doSave(data: StoryData): Promise<boolean> {
       .upsert(storyRow, { onConflict: 'id' })
     if (storyErr) throw storyErr
 
-    // Phase 4: Insert parent child tables
+    // Phase 4a: Insert tables that only reference stories (no child-to-child FK)
     await Promise.all([
       insertRows('story_acts', actRows),
       insertRows('characters', charRows),
-      insertRows('scenes', sceneRows),
       insertRows('subplots', subplotRows),
-      insertRows('promises', promiseRows),
-      insertRows('information_reveals', revealRows),
       insertRows('world_notes', worldRows),
       insertRows('board_notes', boardRows),
     ])
 
-    // Phase 5: Insert child-of-child tables (FK deps on characters/scenes)
+    // Phase 4b: Insert scenes (FK → subplots via subplot_id)
+    await insertRows('scenes', sceneRows)
+
+    // Phase 4c: Insert tables that reference scenes
+    await Promise.all([
+      insertRows('promises', promiseRows),
+      insertRows('information_reveals', revealRows),
+    ])
+
+    // Phase 5: Insert child-of-child tables (FK deps on characters + scenes)
     await Promise.all([
       insertRows('character_relations', relationRows),
       insertRows('scene_connections', connectionRows),
@@ -267,8 +282,9 @@ async function _doSave(data: StoryData): Promise<boolean> {
     ])
 
     return true
-  } catch (err) {
-    console.error('Failed to save story to Supabase:', err)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Failed to save story to Supabase:', msg, err)
     return false
   }
 }
@@ -288,7 +304,27 @@ async function insertRows(table: string, rows: any[]) {
   const { error } = await supabase
     .from(table)
     .insert(rows)
-  if (error) throw error
+  if (!error) return
+
+  // PGRST204: column doesn't exist in DB (migration not applied yet).
+  // Strip the offending column and retry once.
+  if (error.code === 'PGRST204') {
+    const match = error.message.match(/Could not find the '(\w+)' column/)
+    if (match) {
+      const bad = match[1]
+      console.warn(`Column '${bad}' missing from '${table}', retrying without it`)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cleaned = rows.map((r: any) => {
+        const { [bad]: _, ...rest } = r
+        return rest
+      })
+      const { error: retryErr } = await supabase.from(table).insert(cleaned)
+      if (retryErr) throw retryErr
+      return
+    }
+  }
+
+  throw error
 }
 
 // --- Delete story ---
