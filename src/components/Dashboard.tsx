@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStoryStore } from '@/store/useStoryStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -11,6 +11,7 @@ import {
 } from '@/lib/localStorage'
 import { saveStoryToSupabase, deleteStoryFromSupabase, loadStoryFromSupabase } from '@/lib/supabaseSync'
 import { createEmptyStory } from '@/types'
+import { importStoryFromJson } from '@/lib/jsonExport'
 import { genres as genreList } from '@/data/genres'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -95,6 +96,32 @@ export default function Dashboard() {
     if (user) saveStoryToSupabase(newData)
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset so the same file can be re-imported
+    e.target.value = ''
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const userId = user?.id || 'local'
+        const data = importStoryFromJson(reader.result as string, userId)
+        loadStory(data)
+        addStoryToList(data.story)
+        saveStoryDataToLocal(data.story.id, data)
+        saveStoriesToLocal([...stories, data.story])
+        if (user) saveStoryToSupabase(data)
+        navigate(`/canvas/${data.story.id}`)
+      } catch (err) {
+        alert(`Erro ao importar: ${err instanceof Error ? err.message : 'JSON inválido'}`)
+      }
+    }
+    reader.readAsText(file)
+  }
+
   const handleDelete = (storyId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta história?')) return
     deleteStoryDataFromLocal(storyId)
@@ -163,6 +190,16 @@ export default function Dashboard() {
         <Button size="lg" onClick={() => createNewStory()}>
           Nova História
         </Button>
+        <Button size="lg" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+          Importar JSON
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          className="hidden"
+        />
       </div>
 
       {/* Stories list */}
