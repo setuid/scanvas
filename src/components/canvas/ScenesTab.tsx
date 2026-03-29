@@ -4,6 +4,7 @@ import { getFramework } from '@/data/frameworks'
 import type { Scene } from '@/types'
 import Button from '@/components/ui/Button'
 import GuidingQuestion from '@/components/ui/GuidingQuestion'
+import SceneTimeline from './SceneTimeline'
 
 export default function ScenesTab() {
   const current = useStoryStore(s => s.current)!
@@ -11,7 +12,7 @@ export default function ScenesTab() {
   const updateScene = useStoryStore(s => s.updateScene)
   const removeScene = useStoryStore(s => s.removeScene)
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'list' | 'byAct'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'byAct' | 'timeline'>('list')
 
   const fw = getFramework(current.story.framework)
   const sortedScenes = [...current.scenes].sort((a, b) => a.sort_order - b.sort_order)
@@ -313,69 +314,82 @@ export default function ScenesTab() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-serif text-gold">Cenas</h2>
         <div className="flex items-center gap-2">
-          {fw && (
-            <div className="flex bg-bg-tertiary rounded-lg p-0.5 text-xs">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-2 py-1 rounded cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-surface text-text' : 'text-text-muted'}`}
-              >
-                Lista
-              </button>
+          <div className="flex bg-bg-tertiary rounded-lg p-0.5 text-xs">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2 py-1 rounded cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-surface text-text' : 'text-text-muted'}`}
+            >
+              Lista
+            </button>
+            {fw && (
               <button
                 onClick={() => setViewMode('byAct')}
                 className={`px-2 py-1 rounded cursor-pointer transition-colors ${viewMode === 'byAct' ? 'bg-surface text-text' : 'text-text-muted'}`}
               >
                 Por Ato
               </button>
-            </div>
-          )}
+            )}
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`px-2 py-1 rounded cursor-pointer transition-colors ${viewMode === 'timeline' ? 'bg-surface text-text' : 'text-text-muted'}`}
+            >
+              Timeline
+            </button>
+          </div>
           <Button size="sm" onClick={handleAdd}>+ Nova Cena</Button>
         </div>
       </div>
 
-      {viewMode === 'list' ? (
+      {viewMode === 'list' && (
         <div className="space-y-2">
           {sortedScenes.map((scene, i) => renderScene(scene, i))}
         </div>
-      ) : (
-        fw && (
-          <div className="space-y-6">
-            {fw.stages.map(stage => {
-              const scenesInAct = sortedScenes.filter(s => s.act_index === stage.index)
-              return (
-                <div key={stage.index}>
-                  <h3 className="text-sm font-medium text-text-muted mb-2 flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center">
-                      {stage.index + 1}
-                    </span>
-                    {stage.name}
-                    <span className="text-text-muted">({scenesInAct.length})</span>
-                  </h3>
-                  {scenesInAct.length > 0 ? (
-                    <div className="space-y-2">
-                      {scenesInAct.map((sc, i) => renderScene(sc, i))}
-                    </div>
-                  ) : (
-                    <div className="text-text-muted text-xs italic pl-7">Nenhuma cena neste estágio</div>
-                  )}
-                </div>
-              )
-            })}
-            {/* Unassigned scenes */}
-            {(() => {
-              const unassigned = sortedScenes.filter(s => s.act_index === null)
-              if (unassigned.length === 0) return null
-              return (
-                <div>
-                  <h3 className="text-sm font-medium text-text-muted mb-2">Sem estágio ({unassigned.length})</h3>
+      )}
+
+      {viewMode === 'byAct' && fw && (
+        <div className="space-y-6">
+          {fw.stages.map(stage => {
+            const scenesInAct = sortedScenes.filter(s => s.act_index === stage.index)
+            return (
+              <div key={stage.index}>
+                <h3 className="text-sm font-medium text-text-muted mb-2 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center">
+                    {stage.index + 1}
+                  </span>
+                  {stage.name}
+                  <span className="text-text-muted">({scenesInAct.length})</span>
+                </h3>
+                {scenesInAct.length > 0 ? (
                   <div className="space-y-2">
-                    {unassigned.map((sc, i) => renderScene(sc, i))}
+                    {scenesInAct.map((sc, i) => renderScene(sc, i))}
                   </div>
+                ) : (
+                  <div className="text-text-muted text-xs italic pl-7">Nenhuma cena neste estágio</div>
+                )}
+              </div>
+            )
+          })}
+          {(() => {
+            const unassigned = sortedScenes.filter(s => s.act_index === null)
+            if (unassigned.length === 0) return null
+            return (
+              <div>
+                <h3 className="text-sm font-medium text-text-muted mb-2">Sem estágio ({unassigned.length})</h3>
+                <div className="space-y-2">
+                  {unassigned.map((sc, i) => renderScene(sc, i))}
                 </div>
-              )
-            })()}
-          </div>
-        )
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
+      {viewMode === 'timeline' && (
+        <SceneTimeline
+          expanded={expanded}
+          setExpanded={setExpanded}
+          renderScene={renderScene}
+        />
       )}
 
       {current.scenes.length === 0 && (
