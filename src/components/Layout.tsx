@@ -20,7 +20,11 @@ export default function Layout({ children }: LayoutProps) {
   const [authOpen, setAuthOpen] = useState(false)
 
   const handleLogout = async () => {
-    if (supabase) await supabase.auth.signOut()
+    try {
+      if (supabase) await supabase.auth.signOut()
+    } catch {
+      // signOut may fail if token is already invalid — proceed anyway
+    }
     useAuthStore.getState().setUser(null)
     useStoryStore.getState().closeStory()
     navigate('/')
