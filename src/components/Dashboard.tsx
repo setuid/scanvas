@@ -61,10 +61,13 @@ export default function Dashboard() {
   const handleOpen = async (storyId: string) => {
     let data = null
     if (user) {
-      // Authenticated: Supabase is the source of truth
-      data = await loadStoryFromSupabase(storyId)
-      if (data) {
-        saveStoryDataToLocal(storyId, data)
+      try {
+        data = await loadStoryFromSupabase(storyId)
+        if (data) {
+          saveStoryDataToLocal(storyId, data)
+        }
+      } catch (err) {
+        console.error('Failed to load from Supabase, falling back to local:', err)
       }
     }
     // Fallback to local
@@ -80,7 +83,11 @@ export default function Dashboard() {
   const handleDuplicate = async (storyId: string) => {
     let data = null
     if (user) {
-      data = await loadStoryFromSupabase(storyId)
+      try {
+        data = await loadStoryFromSupabase(storyId)
+      } catch (err) {
+        console.error('Failed to load from Supabase for duplicate:', err)
+      }
     }
     if (!data) {
       data = loadStoryDataFromLocal(storyId)
