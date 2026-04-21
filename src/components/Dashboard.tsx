@@ -58,26 +58,12 @@ export default function Dashboard() {
     navigate(`/canvas/${story.id}`)
   }
 
-  const handleOpen = async (storyId: string) => {
-    let data = null
-    if (user) {
-      try {
-        data = await loadStoryFromSupabase(storyId)
-        if (data) {
-          saveStoryDataToLocal(storyId, data)
-        }
-      } catch (err) {
-        console.error('Failed to load from Supabase, falling back to local:', err)
-      }
-    }
-    // Fallback to local
-    if (!data) {
-      data = loadStoryDataFromLocal(storyId)
-    }
+  const handleOpen = (storyId: string) => {
+    const data = loadStoryDataFromLocal(storyId)
     if (data) {
       loadStory(data)
-      navigate(`/canvas/${storyId}`)
     }
+    navigate(`/canvas/${storyId}`)
   }
 
   const handleDuplicate = async (storyId: string) => {
