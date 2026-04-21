@@ -46,24 +46,29 @@ export default function Canvas() {
     if (!current && storyId) {
       const user = useAuthStore.getState().user
       if (user) {
-        // Authenticated: Supabase is the source of truth
-        loadStoryFromSupabase(storyId).then(remoteData => {
-          if (remoteData) {
-            loadStory(remoteData)
-            // Update local cache
-            saveStoryDataToLocal(storyId, remoteData)
-          } else {
-            // Fallback to local if Supabase fails
+        loadStoryFromSupabase(storyId)
+          .then(remoteData => {
+            if (remoteData) {
+              loadStory(remoteData)
+              saveStoryDataToLocal(storyId, remoteData)
+            } else {
+              const localData = loadStoryDataFromLocal(storyId)
+              if (localData) {
+                loadStory(localData)
+              } else {
+                navigate('/')
+              }
+            }
+          })
+          .catch(() => {
             const localData = loadStoryDataFromLocal(storyId)
             if (localData) {
               loadStory(localData)
             } else {
               navigate('/')
             }
-          }
-        })
+          })
       } else {
-        // Not authenticated: use localStorage only
         const data = loadStoryDataFromLocal(storyId)
         if (data) {
           loadStory(data)
